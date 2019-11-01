@@ -1,0 +1,188 @@
+---
+title: "Hawaii Mycobiome"
+author: "Laura Tipton"
+date: "October 25, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(vegan)
+require(hillR)
+require(vioplot)
+require(car)
+require(RColorBrewer)
+require(sads)
+#load data
+
+```
+
+In the data loaded, the following data frames are loaded:
+  esvs contains the ESV by sample table
+  otus contains the OTU by sample table, with samples in the same order as esvs
+  mapping contains the 'metadata' for the samples
+  ESVbasedOTUs which contains OTUs in rows and ESVs in columns with 1's to indicate which ESVs are in each OTU
+
+Additionally, the following vectors have already been isolated from the mapping data frame:
+  ecocol is the samples coded (as colors) by their ecosystem
+  islcol is the samples coded (as colors) by their island
+  runcol is the samples coded (as colors) by their survey
+See legends for color mappings
+
+Finally, one personal function is imported
+  gt0 counts the number of instances greater than 0 in a vector
+  
+Separate large OTUs and create bar plots for their islands of origin
+```{r large OTUs}
+#denovo9552 (contains most ESVs)
+c9552 <- colnames(ESVbasedOTUs)[which(ESVbasedOTUs[9553,]==1)]
+e9552 <- as.numeric(substr(c9552, 13, 20))
+denovo9552.temp <- esvs[,e9552]
+denovo9552 <- denovo9552.temp[-which(rowSums(denovo9552.temp)<10),]
+d9552ecocol <- ecocol[-which(rowSums(denovo9552.temp)<10)]
+d9552islcol <- islcol[-which(rowSums(denovo9552.temp)<10)]
+d9552runcol <- runcol[-which(rowSums(denovo9552.temp)<10)]
+
+#denovo7896 ()
+c7896 <- colnames(ESVbasedOTUs)[which(ESVbasedOTUs[7897,]==1)]
+e7896 <- as.numeric(substr(c7896, 13, 20))
+denovo7896.temp <- esvs[,e7896]
+denovo7896 <- denovo7896.temp[-which(rowSums(denovo7896.temp)<10),]
+d7896ecocol <- ecocol[-which(rowSums(denovo7896.temp)<10)]
+d7896islcol <- islcol[-which(rowSums(denovo7896.temp)<10)]
+d7896runcol <- runcol[-which(rowSums(denovo7896.temp)<10)]
+
+#denovo10518 ()
+c10518 <- colnames(ESVbasedOTUs)[which(ESVbasedOTUs[10519,]==1)]
+e10518 <- as.numeric(substr(c10518, 13, 20))
+denovo10518.temp <- esvs[,e10518]
+denovo10518 <- denovo10518.temp[-which(rowSums(denovo10518.temp)<10),]
+d10518ecocol <- ecocol[-which(rowSums(denovo10518.temp)<10)]
+d10518islcol <- islcol[-which(rowSums(denovo10518.temp)<10)]
+```
+
+```{r figure 1}
+#figure 1A denovo9552
+d9552byisleco <- aggregate(denovo9552, list(d9552islcol, d9552ecocol), sum)
+rownames(d9552byisleco) <- paste(d9552byisleco[,1], d9552byisleco[,2])
+d9552byisleco <- d9552byisleco[-c(5),-c(1:2)] #remove unassigned islands and/or ecosystems (row 5)
+#convert to relative abundance
+d9552islecosums <- apply(d9552byisleco, 2, sum)
+d9552islecorel <- matrix(0, nrow=nrow(d9552byisleco), ncol=ncol(d9552byisleco))
+for(i in 1:ncol(d9552byisleco)){
+  d9552islecorel[,i] <- d9552byisleco[,i]/d9552islecosums[i]
+}
+colnames(d9552islecorel) <- colnames(d9552byisleco)
+#plot
+barplot(cbind(rowSums(d9552byisleco[order(rownames(d9552byisleco)),])/sum(d9552byisleco),
+              d9552islecorel[order(rownames(d9552byisleco)),]), 
+        col=c("darkgreen", "goldenrod", "olivedrab", "turquoise", "olivedrab", "chocolate", "goldenrod", "olivedrab"),
+        names.arg=c("OTU9552",substr(c9552,10,20)), las=2, lwd=2, 
+        space=c(0.2, 0.7, rep(0.2,22)), density=c(10, 10, 10, 10, 17, 20, 20, 20), 
+        angle=c(45, 45, 45, 45, 90, 315, 315, 315), border=NA)
+
+#figure 1B denovo10518
+d10518byisleco <- aggregate(denovo10518, list(d10518islcol, d10518ecocol), sum)
+rownames(d10518byisleco) <- paste(d10518byisleco[,1], d10518byisleco[,2])
+d10518byisleco <- d10518byisleco[-c(1,2,7),-c(1:2)] #remove unknown island and/or ecosystem, in rows 1, 2, and 7
+#convert to relative abundance
+d10518islecosums <- apply(d10518byisleco, 2, sum)
+d10518islecorel <- matrix(0, nrow=nrow(d10518byisleco), ncol=ncol(d10518byisleco))
+for(i in 1:ncol(d10518byisleco)){
+  d10518islecorel[,i] <- d10518byisleco[,i]/d10518islecosums[i]
+}
+colnames(d10518islecorel) <- colnames(d10518byisleco)
+#plot
+barplot(cbind(rowSums(d10518byisleco[order(rownames(d10518byisleco)),])/sum(d10518byisleco),
+              d10518islecorel[order(rownames(d10518byisleco)),]),
+        col=c("darkgreen", "goldenrod", "olivedrab", "olivedrab", "turquoise", "chocolate", "goldenrod", "olivedrab"),
+        names.arg=c("OTU10518",substr(c10518,10,20)), las=2, lwd=2, 
+        space=c(0.2, 0.7, rep(0.2,11)), density=c(10, 10, 10, 17, 17, 20, 20, 20),
+        xlim=c(0,23), angle=c(45, 45, 45, 90, 90, 315, 315, 315), border=NA)
+#add legend to this one because of room
+legend("right", fill=c("darkgreen", "goldenrod", "turquoise", "olivedrab", "chocolate", "black", "black", "black"),
+       angle=c(rep(NULL, 5), 90, 315, 45), density=c(rep(1000, 5), 10, 17, 20), bty="n",
+       cex=2,legend=c("Endophyte", "Aerobiota", "Marine", "Epiphyte", "Soil", "Oahu", "Maui Nui", "Hawaii"))
+
+#figure 1C denovo7896
+d7896byisleco <- aggregate(denovo7896, list(d7896islcol, d7896ecocol), sum)
+rownames(d7896byisleco) <- paste(d7896byisleco[,1], d7896byisleco[,2])
+d7896byisleco <- d7896byisleco[-c(1,2,8,12),-c(1:2)] #remove rows with unknown island or ecosystem, rows 1, 2, 8, and 12
+#convert to relative abundance
+d7896islecosums <- apply(d7896byisleco, 2, sum)
+d7896islecorel <- matrix(0, nrow=nrow(d7896byisleco), ncol=ncol(d7896byisleco))
+for(i in 1:ncol(d7896byisleco)){
+  d7896islecorel[,i] <- d7896byisleco[,i]/d7896islecosums[i]
+}
+colnames(d7896islecorel) <- colnames(d7896byisleco)
+#plot
+barplot(cbind(rowSums(d7896byisleco[order(rownames(d7896byisleco)),])/sum(d7896byisleco), d7896islecorel[order(rownames(d7896byisleco)),]),
+        col=c("chocolate", "darkgreen", "goldenrod", "olivedrab", "turquoise", "olivedrab", "turquoise", "chocolate", "goldenrod", "olivedrab"),
+        names.arg=c("OTU7896",substr(c7896,10,20)), las=2, lwd=2, 
+        space=c(0.2, 0.7, rep(0.2,13)), density=c(10, 10, 10, 10, 10, 17, 17, 20, 20, 20),
+        xlim=c(0,23), angle=c(45, 45, 45, 45, 45, 90, 90, 315, 315, 315), border=NA)
+
+```
+
+Calculate diversity metrics. For beta diversity, samples with a single OTU are removed, as they end up being outliers in the MDS plots
+
+```{r diversity metrics}
+
+#alpha diversity
+otush0 <- hill_taxa(otus, 0, MARGIN=1)
+otush1 <- hill_taxa(otus, 1, MARGIN=1)
+otush2 <- hill_taxa(otus, 2, MARGIN=1)
+esvsh0 <- hill_taxa(esvs, 0, MARGIN=1)
+esvsh1 <- hill_taxa(esvs, 1, MARGIN=1)
+esvsh2 <- hill_taxa(esvs, 2, MARGIN=1)
+
+#beta diversity
+notus <- apply(otus, 1, gt0)
+
+otujac <- metaMDS(otus[-c(which(notus==1),290),], distance="jaccard", binary=TRUE, trymax=200)
+esvjac <- metaMDS(esvs[-c(which(notus==1),290),], distance="jaccard", binary=TRUE, trymax=200)
+
+```
+
+
+```{r fig 2}
+#violin plots
+
+vioplot(otush0~recode(runcol, '"#8DD3C7" = "BIG";
+"#FFFFB3" = "FEF2"; "#BEBADA" = "FEF3"; "#FB8072" = "MesoAlgae"; "#80B1D3" = "MLO";
+"#FDB462" = "Nguen"; "#B3DE69" = "PeayVitousek"; "#FCCDE5" = "Swabs";
+"#D9D9D9" = "Lau"; "#BC80BD" = "Kipuka"; "darkgrey" = "FEF3"'),
+col=c(brewer.pal(10,"Set3")[c(1,2,3,10,9,4,5,6,7,8)]),
+at=seq(1,20,2), wex=c(382, 276, 252, 80, 335, 23, 276, 5, 156, 190)/382,
+ylim=c(0, 720), ylab="Observed Richness", xlab="Survey")
+
+vioplot(esvsh0~recode(runcol, '"#8DD3C7" = "BIG";
+"#FFFFB3" = "FEF2"; "#BEBADA" = "FEF3"; "#FB8072" = "MesoAlgae"; "#80B1D3" = "MLO";
+"#FDB462" = "Nguen"; "#B3DE69" = "PeayVitousek"; "#FCCDE5" = "Swabs";
+"#D9D9D9" = "Lau"; "#BC80BD" = "Kipuka"; "darkgrey" = "FEF3"'),
+border=c(brewer.pal(10,"Set3")[c(1,2,3,10,9,4,5,6,7,8)]),
+rectCol=c(brewer.pal(10,"Set3")[c(1,2,3,10,9,4,5,6,7,8)]),
+lineCol=c(brewer.pal(10,"Set3")[c(1,2,3,10,9,4,5,6,7,8)]),
+at=seq(1.75,20.75,2), wex=c(382, 276, 252, 80, 335, 23, 276, 5, 156, 190)/382,
+add=TRUE, col=NA, ylab="Observed Richness", xlab="Survey", colMed="black")
+
+```
+
+```{r fig 3}
+#procrustes plot
+
+proc <- procrustes(otusjac$points, esvsjac$points)
+plot(proc)
+```
+
+```{r fig 4}
+#octave plot
+
+octavotus <- octav(colSums(otus))
+octavesvs <- octav(colSums(esvs))
+
+plot(otctavesvs, prop=TRUE, border=NA, col=NA)
+lines(octavsesvs, prop=TRUE, mid=FALSE, col="red", pch=19)
+lines(octavsotus, prop=TRUE, mid=FALSE, col="blue", pch=19)
+
+ks.test(octavotus$Freq, octavesvs$Freq)
